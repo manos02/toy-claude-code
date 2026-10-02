@@ -1,5 +1,3 @@
-[![progress-banner](https://backend.codecrafters.io/progress/claude-code/8e7a01db-9311-4fe7-97ac-90fb749a19f5)](https://app.codecrafters.io/users/manos02?r=2qF)
-
 This is a starting point for Python solutions to the
 ["Build Your own Claude Code" Challenge](https://codecrafters.io/challenges/claude-code).
 
