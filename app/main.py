@@ -1,6 +1,7 @@
 import argparse
 import os
 import sys
+import json
 
 from openai import OpenAI
 
@@ -31,6 +32,7 @@ tools = [
 def main():
     p = argparse.ArgumentParser()
     p.add_argument("-p", required=True)
+    p.add_argument("--local", action="store_true")
     args = p.parse_args()
 
     if not API_KEY:
@@ -38,8 +40,9 @@ def main():
 
     client = OpenAI(api_key=API_KEY, base_url=BASE_URL)
 
+    model = "anthropic/claude-haiku-4.5" if not args.local else "qwen/qwen3.8-27b:free"
     chat = client.chat.completions.create(
-        model="anthropic/claude-haiku-4.5",
+        model=model,
         messages=[{"role": "user", "content": args.p}],
         tools=tools
     )
@@ -50,8 +53,22 @@ def main():
     # You can use print statements as follows for debugging, they'll be visible when running tests.
     print("Logs from your program will appear here!", file=sys.stderr)
 
-    # TODO: Uncomment the following line to pass the first stage
-    print(chat.choices[0].message.content)
+    # Check if there are tool calls
+    tool_calls = chat.choices[0].message.tool_calls
+    message = chat.choices[0].message 
+
+    if tool_calls:
+        function = tool_calls[0].function
+        function_name = function.name 
+        if function_name == 'Read':
+            args = json.loads(function.arguments)
+            file_path = args["file_path"]
+            with open(file_path, "r", encoding="utf-8") as f:
+                content = f.read()
+            print(content)
+    else:
+        print(message.content)
+
 
 
 if __name__ == "__main__":
