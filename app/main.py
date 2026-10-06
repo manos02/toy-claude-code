@@ -41,33 +41,39 @@ def main():
     client = OpenAI(api_key=API_KEY, base_url=BASE_URL)
 
     model = "anthropic/claude-haiku-4.5" if not args.local else "qwen/qwen3.8-27b:free"
-    chat = client.chat.completions.create(
-        model=model,
-        messages=[{"role": "user", "content": args.p}],
-        tools=tools
-    )
+    messages = [{"role": "user", "content": args.p}]
 
-    if not chat.choices or len(chat.choices) == 0:
-        raise RuntimeError("no choices in response")
+    while True:
+        chat = client.chat.completions.create(
+            model=model,
+            messages=messages,
+            tools=tools
+        )
 
-    # You can use print statements as follows for debugging, they'll be visible when running tests.
-    print("Logs from your program will appear here!", file=sys.stderr)
+        messages.append(chat.choices[0].message)
 
-    # Check if there are tool calls
-    tool_calls = chat.choices[0].message.tool_calls
-    message = chat.choices[0].message 
+        if not chat.choices or len(chat.choices) == 0:
+            raise RuntimeError("no choices in response")
 
-    if tool_calls:
-        function = tool_calls[0].function
-        function_name = function.name 
-        if function_name == 'Read':
-            args = json.loads(function.arguments)
-            file_path = args["file_path"]
-            with open(file_path, "r", encoding="utf-8") as f:
-                content = f.read()
-            print(content)
-    else:
-        print(message.content)
+        # You can use print statements as follows for debugging, they'll be visible when running tests.
+        print("Logs from your program will appear here!", file=sys.stderr)
+
+        # Check if there are tool calls
+        tool_calls = chat.choices[0].message.tool_calls
+        message = chat.choices[0].message 
+
+        for tool_call in tool_calls or []:
+            function = tool_call.function
+            function_name = function.name 
+            if function_name == 'Read':
+                args = json.loads(function.arguments)
+                file_path = args["file_path"]
+                with open(file_path, "r", encoding="utf-8") as f:
+                    content = f.read()
+                print(content)
+        else:
+            # response has no tool calls
+            print(message.content)
 
 
 
