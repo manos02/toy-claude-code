@@ -1,5 +1,6 @@
 import argparse
 import os
+import subprocess
 import sys
 import json
 
@@ -32,21 +33,38 @@ tools = [
             "name": "Write",
             "description": "Write content to a file",
             "parameters": {
-            "type": "object",
-            "required": ["file_path", "content"],
-            "properties": {
-                "file_path": {
-                "type": "string",
-                "description": "The path of the file to write to"
+                "type": "object",
+                "required": ["file_path", "content"],
+                "properties": {
+                    "file_path": {
+                        "type": "string",
+                        "description": "The path of the file to write to",
+                    },
+                    "content": {
+                        "type": "string",
+                        "description": "The content to write to the file",
+                    },
                 },
-                "content": {
-                "type": "string",
-                "description": "The content to write to the file"
-                }
-            }
-            }
-        }
-    }
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "Bash",
+            "description": "Execute a shell command",
+            "parameters": {
+                "type": "object",
+                "required": ["command"],
+                "properties": {
+                    "command": {
+                        "type": "string",
+                        "description": "The command to execute",
+                    }
+                },
+            },
+        },
+    },
 ]
 
 
@@ -103,6 +121,11 @@ def main():
                 with open(file_path, "w") as f:
                     f.write(content)
                     messages.append({"role": "tool", "tool_call_id": tool_call.id, "content": content})
+            elif function_name == "Bash":
+                command = args["command"]
+                res = subprocess.run(command, shell=True, capture_output=True, text=True)
+                content = res.stdout or res.stderr
+                messages.append({"role": "tool", "tool_call_id": tool_call.id, "content": content})
 
 
 if __name__ == "__main__":
