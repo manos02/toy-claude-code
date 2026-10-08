@@ -59,10 +59,15 @@ def main():
         print("Logs from your program will appear here!", file=sys.stderr)
 
         # Check if there are tool calls
-        tool_calls = chat.choices[0].message.tool_calls
-        message = chat.choices[0].message 
+        tool_calls = chat.choices[-1].message.tool_calls
+        message = chat.choices[-1].message 
 
-        for tool_call in tool_calls or []:
+        # Response has no tool_calls
+        if not tool_calls:
+            print(message.content)
+            break
+
+        for tool_call in tool_calls:
             function = tool_call.function
             function_name = function.name 
             if function_name == 'Read':
@@ -70,11 +75,7 @@ def main():
                 file_path = args["file_path"]
                 with open(file_path, "r", encoding="utf-8") as f:
                     content = f.read()
-                print(content)
-        else:
-            # response has no tool calls
-            print(message.content)
-
+                    messages.append({"role": "tool", "tool_call_id": tool_call.id, "content": content})
 
 
 if __name__ == "__main__":
