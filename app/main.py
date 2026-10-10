@@ -67,6 +67,36 @@ tools = [
     },
 ]
 
+def register_skills():
+    # used to find the file path based on the skill name
+    skill_file_paths = {}
+    # Load skills
+    skills_dir = ".claude/skills/"
+    skills = "You have access to the following skills:\n\n"
+    for subdir, _, files in os.walk(skills_dir):
+        for file in files:
+            file_path = os.path.join(subdir, file)
+            with open(file_path, "r") as f:
+                file_content = f.read().splitlines()
+                name = file_content[1]
+                skill_file_paths[name.split(":")[1].strip()] = file_path
+                description = file_content[2]
+                # {- skill: Description} format
+                skill = f"-{name.split(":")[1]}:{description.split(":")[1]}"
+                skills += skill
+    return skills, skill_file_paths
+
+def load_skill(user_prompt, skill_file_paths):
+    # check if first word is a skill name
+    # If yes, then load the skill
+    if user_prompt[0] == "/":
+        skill_name = user_prompt[1:]
+        file_path = skill_file_paths[skill_name]
+        with open(file_path, "r") as f:
+            file_content = f.read()
+            # get all the content after the description
+            user_prompt = file_content.split("---")[-1]
+    return user_prompt
 
 def main():
     p = argparse.ArgumentParser()
@@ -80,22 +110,15 @@ def main():
     client = OpenAI(api_key=API_KEY, base_url=BASE_URL)
 
     model = "anthropic/claude-haiku-4.5" if not args.local else "qwen/qwen3.8-27b:free"
-    messages = [{"role": "user", "content": args.p}]
 
-    # Load skills
-    skills_dir = ".claude/skills/"
-    skills = "You have access to the following skills:\n\n"
-    for subdir, dirs, files in os.walk(skills_dir):
-        for file in files:
-            file_path = os.path.join(subdir, file)
-            with open(file_path, "r") as f:
-                temp = f.read().splitlines()
-                name = temp[1]
-                description = temp[2]
-                # {- skill: Description} format
-                skill = f"-{name.split(":")[1]}:{description.split(":")[1]}"
-                skills += skill
-    messages.append({"role": "system", "content": skills})
+    skills, skill_file_paths = register_skills()
+    # append skills
+    messages = [{"role": "system", "content": skills}]
+
+    user_prompt = load_skill(args.p, skill_file_paths)
+    # append user prompt
+    messages.append({"role": "user", "content": user_prompt})
+
 
     while True:
         chat = client.chat.completions.create(
@@ -121,6 +144,7 @@ def main():
             print(message.content)
             break
 
+        # Tool execution
         for tool_call in tool_calls:
             function = tool_call.function
             function_name = function.name 
