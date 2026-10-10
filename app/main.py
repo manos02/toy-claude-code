@@ -86,12 +86,6 @@ def register_skills():
                 skills += skill
     return skills, skill_file_paths
 
-def replace(m, args):
-    token = m.group(1)
-    if token == "arguments":
-        return " ".join(args)
-    return args[int(token)]
-
 def load_skill(user_prompt, skill_file_paths):
     # check if first word is a skill name
     # If yes, then load the skill
