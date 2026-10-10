@@ -90,7 +90,10 @@ def load_skill(user_prompt, skill_file_paths):
     # check if first word is a skill name
     # If yes, then load the skill
     if user_prompt[0] == "/":
-        skill_name = user_prompt[1:]
+        user_prompt = user_prompt[:1].split()
+        skill_name = user_prompt[0] 
+        args = user_prompt[1:]
+        print(skill_name, args)
         file_path = skill_file_paths[skill_name]
         with open(file_path, "r") as f:
             file_content = f.read()
