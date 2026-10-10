@@ -82,6 +82,21 @@ def main():
     model = "anthropic/claude-haiku-4.5" if not args.local else "qwen/qwen3.8-27b:free"
     messages = [{"role": "user", "content": args.p}]
 
+    # Load skills
+    skills_dir = ".claude/skills/"
+    skills = "You have access to the following skills:\n\n"
+    for subdir, dirs, files in os.walk(skills_dir):
+        for file in files:
+            file_path = os.path.join(subdir, file)
+            with open(file_path, "r") as f:
+                temp = f.read().splitlines()
+                name = temp[1]
+                description = temp[2]
+                # {- skill: Description} format
+                skill = f"-{name.split(":")[1]}:{description.split(":")[1]}"
+                skills += skill
+    messages.append({"role": "system", "content": skills})
+
     while True:
         chat = client.chat.completions.create(
             model=model,
