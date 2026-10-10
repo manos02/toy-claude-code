@@ -3,7 +3,7 @@ import os
 import subprocess
 import sys
 import json
-
+import re
 from openai import OpenAI
 
 API_KEY = os.getenv("OPENROUTER_API_KEY")
@@ -86,19 +86,28 @@ def register_skills():
                 skills += skill
     return skills, skill_file_paths
 
+def replace(m, args):
+    token = m.group(1)
+    if token == "arguments":
+        return " ".join(args)
+    return args[int(token)]
+
 def load_skill(user_prompt, skill_file_paths):
     # check if first word is a skill name
     # If yes, then load the skill
     if user_prompt[0] == "/":
-        user_prompt = user_prompt[:1].split()
+        user_prompt = user_prompt[1:].split()
         skill_name = user_prompt[0] 
         args = user_prompt[1:]
-        print(skill_name, args)
+        # print(skill_name, args)
         file_path = skill_file_paths[skill_name]
         with open(file_path, "r") as f:
             file_content = f.read()
             # get all the content after the description
             user_prompt = file_content.split("---")[-1]
+            user_prompt = user_prompt.replace("$ARGUMENTS", " ".join(args))
+            user_prompt = re.sub(r"\$(\d+)", lambda m: args[int(m.group(1))], user_prompt)
+
     return user_prompt
 
 def main():
