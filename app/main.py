@@ -109,8 +109,8 @@ def load_skills(user_prompt, skill_file_paths):
                 file_content = f.read()
                 # get all the content after the description
                 user_prompt = file_content.split("---")[-1]
-                user_prompt = user_prompt.replace("$ARGUMENTS", " ".join(args))
-                user_prompt = re.sub(r"\$(\d+)", lambda m: args[int(m.group(1))], user_prompt)
+                user_prompt = user_prompt.replace("$ARGUMENTS", " ".join(args)) # replace $ARGUMENTS in string
+                user_prompt = re.sub(r"\$(\d+)", lambda m: args[int(m.group(1))], user_prompt) # replace $0, $1, ... with each argument
                 prompts.append(user_prompt)
     else:
         # no skills in the prompt
