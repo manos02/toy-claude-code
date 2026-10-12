@@ -5,6 +5,7 @@ import sys
 import json
 import re
 from openai import OpenAI
+from collections import defaultdict
 
 API_KEY = os.getenv("OPENROUTER_API_KEY")
 BASE_URL = os.getenv("OPENROUTER_BASE_URL", default="https://openrouter.ai/api/v1")
@@ -86,23 +87,35 @@ def register_skills():
                 skills += skill
     return skills, skill_file_paths
 
-def load_skill(user_prompt, skill_file_paths):
+def load_skills(user_prompt, skill_file_paths):
     # check if first word is a skill name
     # If yes, then load the skill
+    skills = []
+    prompts = []
+    args = []
     if user_prompt[0] == "/":
-        user_prompt = user_prompt[1:].split()
-        skill_name = user_prompt[0] 
-        args = user_prompt[1:]
-        # print(skill_name, args)
-        file_path = skill_file_paths[skill_name]
-        with open(file_path, "r") as f:
-            file_content = f.read()
-            # get all the content after the description
-            user_prompt = file_content.split("---")[-1]
-            user_prompt = user_prompt.replace("$ARGUMENTS", " ".join(args))
-            user_prompt = re.sub(r"\$(\d+)", lambda m: args[int(m.group(1))], user_prompt)
+        user_prompt = user_prompt.split()
+        for j, word in enumerate(user_prompt):
+            if word[1:] in skill_file_paths:
+                skills.append(word[1:])
+            else:
+                # append the rest of the content
+                args = user_prompt[j:]
+                break
 
-    return user_prompt
+        for s in skills:
+            file_path = skill_file_paths[s] # file path is the skill name
+            with open(file_path, "r") as f:
+                file_content = f.read()
+                # get all the content after the description
+                user_prompt = file_content.split("---")[-1]
+                user_prompt = user_prompt.replace("$ARGUMENTS", " ".join(args))
+                user_prompt = re.sub(r"\$(\d+)", lambda m: args[int(m.group(1))], user_prompt)
+                prompts.append(user_prompt)
+    else:
+        # no skills in the prompt
+        prompts.append(user_prompt)
+    return prompts
 
 def main():
     p = argparse.ArgumentParser()
@@ -121,10 +134,10 @@ def main():
     # append skills
     messages = [{"role": "system", "content": skills}]
 
-    user_prompt = load_skill(args.p, skill_file_paths)
-    # append user prompt
-    messages.append({"role": "user", "content": user_prompt})
-
+    user_prompts = load_skills(args.p, skill_file_paths)
+    for u in user_prompts:
+        # append user prompt
+        messages.append({"role": "user", "content": u})
 
     while True:
         chat = client.chat.completions.create(
