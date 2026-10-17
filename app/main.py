@@ -77,14 +77,15 @@ def register_skills():
     for subdir, _, files in os.walk(skills_dir):
         for file in files:
             file_path = os.path.join(subdir, file)
-            with open(file_path, "r") as f:
-                file_content = f.read().splitlines()
-                name = file_content[1]
-                skill_file_paths[name.split(":")[1].strip()] = file_path
-                description = file_content[2]
-                # {- skill: Description} format
-                skill = f"-{name.split(":")[1]}:{description.split(":")[1]}"
-                skills += skill
+            if file_path.endswith("SKILL.md"):
+                with open(file_path, "r") as f:
+                    file_content = f.read().splitlines()
+                    name = file_content[1]
+                    skill_file_paths[name.split(":")[1].strip()] = file_path
+                    description = file_content[2]
+                    # {- skill: Description} format
+                    skill = f"-{name.split(":")[1]}:{description.split(":")[1]}"
+                    skills += skill
     return skills, skill_file_paths
 
 def load_skills(user_prompt, skill_file_paths):
